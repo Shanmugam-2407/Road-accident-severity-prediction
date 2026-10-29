@@ -2,10 +2,11 @@
 
 import io
 import logging
-from typing import Dict, Any
-from fastapi import FastAPI, UploadFile, File, HTTPException, status
+from pathlib import Path
+from typing import Dict, Any, List
+from fastapi import FastAPI, UploadFile, File, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import Response, JSONResponse, HTMLResponse
 
 from backend.schemas.prediction_schema import (
     AccidentPredictionRequest,
@@ -40,16 +41,48 @@ app.add_middleware(
 )
 
 
-@app.get("/", summary="Root Endpoint")
-def get_root() -> Dict[str, str]:
-    """Root metadata endpoint returning application identity and version."""
+INDEX_HTML_PATH = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+
+
+@app.get("/", summary="Root Endpoint & Web Interface")
+def get_root(request: Request):
+    """
+    Root endpoint. Returns the rich interactive HTML/CSS/JS frontend when accessed
+    via a browser, and JSON application metadata when accessed via API/TestClient.
+    """
+    accept_header = request.headers.get("accept", "")
+    if "text/html" in accept_header and "application/json" not in accept_header:
+        if INDEX_HTML_PATH.is_file():
+            return HTMLResponse(content=INDEX_HTML_PATH.read_text(encoding="utf-8"))
+
     return {
         "application": "RoadGuard AI - Road Accident Severity Prediction System",
         "version": "1.0.0",
         "tagline": "Understand Risk. Improve Road Safety.",
         "status": "online",
         "documentation": "/docs",
+        "web_ui": "/ui",
     }
+
+
+@app.get("/ui", response_class=HTMLResponse, summary="Web Interface")
+def get_ui():
+    """Serves the standalone inline HTML/CSS/JavaScript RoadGuard AI frontend."""
+    if INDEX_HTML_PATH.is_file():
+        return HTMLResponse(content=INDEX_HTML_PATH.read_text(encoding="utf-8"))
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
+
+@app.get("/analytics/summary", summary="Get Historical Analytics Summary")
+def get_analytics_summary() -> Dict[str, Any]:
+    """Retrieve aggregate historical distributions for the dashboard and analytics charts."""
+    return prediction_service.get_dataset_analytics()
+
+
+@app.get("/analytics/hotspots", summary="Get Geographic Accident Hotspots")
+def get_analytics_hotspots(limit: int = 2500) -> List[Dict[str, Any]]:
+    """Retrieve validated coordinate clusters for the interactive map."""
+    return prediction_service.get_hotspot_data(limit=limit)
 
 
 @app.get("/health", response_model=HealthResponse, summary="Health & Model Readiness Check")
@@ -195,3 +228,4 @@ def get_model_metrics() -> ModelMetricsResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Metrics retrieval error: {str(e)}",
         )
+

@@ -104,3 +104,4 @@ def get_model_metrics_api() -> Dict[str, Any]:
             raise APIClientError(f"Metrics endpoint error {response.status_code}: {response.text}")
     except requests.exceptions.RequestException as e:
         raise APIClientError(f"Failed to fetch model metrics from backend: {str(e)}")
+

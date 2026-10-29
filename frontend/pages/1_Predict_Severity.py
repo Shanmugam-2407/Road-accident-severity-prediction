@@ -201,3 +201,4 @@ if submitted:
             st.error(f"❌ Prediction request failed: {e}")
         except Exception as e:
             st.error(f"❌ Unexpected error during prediction: {e}")
+

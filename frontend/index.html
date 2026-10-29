@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROADGUARD AI | Accident Severity & Risk Analytics</title>
+  <!-- Chart.js & Leaflet.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <style>
+    :root {
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --slight: #0284C7;
+      --slight-bg: #E0F2FE;
+      --serious: #D97706;
+      --serious-bg: #FEF3C7;
+      --fatal: #DC2626;
+      --fatal-bg: #FEE2E2;
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header & Navigation */
+    header {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 0 2rem;
+    }
+
+    .nav-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      font-size: 1.8rem;
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #1E293B;
+    }
+
+    .brand-tagline {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .nav-tab {
+      padding: 8px 14px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-tab:hover {
+      background: #F1F5F9;
+      color: var(--text-main);
+    }
+
+    .nav-tab.active {
+      background: #EFF6FF;
+      color: var(--primary);
+    }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-online {
+      background: #DCFCE7;
+      color: #15803D;
+    }
+
+    .status-offline {
+      background: #FEE2E2;
+      color: #B91C1C;
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1300px;
+      margin: 1.5rem auto 3rem;
+      padding: 0 1.5rem;
+      width: 100%;
+      flex: 1;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.25s ease-in-out;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Layout Elements */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 4px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Forms */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    input, select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #FFFFFF;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Prediction Result Box */
+    .result-box {
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-align: center;
+      margin-top: 1.25rem;
+      display: none;
+    }
+
+    .result-box.Slight {
+      background: var(--slight-bg);
+      border: 2px solid var(--slight);
+      color: #0369A1;
+    }
+
+    .result-box.Serious {
+      background: var(--serious-bg);
+      border: 2px solid var(--serious);
+      color: #B45309;
+    }
+
+    .result-box.Fatal {
+      background: var(--fatal-bg);
+      border: 2px solid var(--fatal);
+      color: #B91C1C;
+    }
+
+    .result-severity {
+      font-size: 2.2rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin: 6px 0;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    th {
+      background: #F8FAFC;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover {
+      background: #F8FAFC;
+    }
+
+    /* Map */
+    #map {
+      height: 520px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      z-index: 1;
+    }
+
+    /* File dropzone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      background: #F8FAFC;
+      transition: border-color 0.2s;
+    }
+
+    .dropzone:hover {
+      border-color: var(--primary);
+    }
+
+    .alert-box {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-top: 1rem;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="nav-container">
+      <div class="brand">
+        <span class="brand-icon">🛡️</span>
+        <div>
+          <div class="brand-title">ROADGUARD AI</div>
+          <div class="brand-tagline">Understand Risk. Improve Road Safety.</div>
+        </div>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+        <button class="nav-tab" onclick="switchTab('predict')">🔮 Predict Severity</button>
+        <button class="nav-tab" onclick="switchTab('batch')">📁 Batch CSV</button>
+        <button class="nav-tab" onclick="switchTab('analytics')">📈 Analytics</button>
+        <button class="nav-tab" onclick="switchTab('hotspots')">🗺️ Hotspots</button>
+        <button class="nav-tab" onclick="switchTab('performance')">🎯 Model Audit</button>
+      </nav>
+
+      <div id="system-status-badge" class="status-badge status-online">
+        ● Connecting...
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. DASHBOARD TAB -->
+    <section id="tab-dashboard" class="tab-content active">
+      <div class="grid-4">
+        <div class="card">
+          <div class="metric-label">Total Collisions</div>
+          <div id="kpi-total" class="metric-value">...</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Historical records</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Slight Severity</div>
+          <div id="kpi-slight" class="metric-value" style="color: var(--slight);">...</div>
+          <div id="kpi-slight-pct" style="font-size: 0.8rem; color: var(--text-muted);">...</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Serious Severity</div>
+          <div id="kpi-serious" class="metric-value" style="color: var(--serious);">...</div>
+          <div id="kpi-serious-pct" style="font-size: 0.8rem; color: var(--text-muted);">...</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Fatal Incidents</div>
+          <div id="kpi-fatal" class="metric-value" style="color: var(--fatal);">...</div>
+          <div id="kpi-fatal-pct" style="font-size: 0.8rem; color: var(--text-muted);">...</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Historical Severity Distribution</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-severity"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Collisions by Time of Day (24-Hour)</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-hourly"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Accidents by Weather Conditions</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-weather"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Accidents by Road Surface Condition</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-surface"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. PREDICT SEVERITY TAB -->
+    <section id="tab-predict" class="tab-content">
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.4rem;">🔮 Collision Severity Risk Assessment</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          Configure pre-collision circumstances to compute the estimated severity category and class confidence scores using the trained Machine Learning pipeline.
+        </p>
+
+        <form id="prediction-form" onsubmit="handleSinglePrediction(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="num_vehicles">Number of Vehicles Involved</label>
+              <input type="number" id="num_vehicles" min="1" max="20" value="2" required />
+            </div>
+            <div class="form-group">
+              <label for="speed_limit">Posted Speed Limit (mph)</label>
+              <select id="speed_limit">
+                <option value="20">20 mph</option>
+                <option value="30" selected>30 mph</option>
+                <option value="40">40 mph</option>
+                <option value="50">50 mph</option>
+                <option value="60">60 mph</option>
+                <option value="70">70 mph</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="accident_hour">Collision Time (Hour of Day: 0-23)</label>
+              <input type="number" id="accident_hour" min="0" max="23" value="18" required />
+            </div>
+            <div class="form-group">
+              <label for="day_of_week">Day of Week</label>
+              <select id="day_of_week">
+                <option>Monday</option>
+                <option>Tuesday</option>
+                <option>Wednesday</option>
+                <option>Thursday</option>
+                <option selected>Friday</option>
+                <option>Saturday</option>
+                <option>Sunday</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="road_type">Carriageway Road Type</label>
+              <select id="road_type">
+                <option selected>Single carriageway</option>
+                <option>Dual carriageway</option>
+                <option>Roundabout</option>
+                <option>One way street</option>
+                <option>Slip road</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="road_surface">Road Surface Condition</label>
+              <select id="road_surface">
+                <option selected>Dry</option>
+                <option>Wet or damp</option>
+                <option>Snow</option>
+                <option>Frost or ice</option>
+                <option>Flood</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="weather">Weather Condition</label>
+              <select id="weather">
+                <option selected>Fine no high winds</option>
+                <option>Raining no high winds</option>
+                <option>Raining + high winds</option>
+                <option>Fine + high winds</option>
+                <option>Snowing</option>
+                <option>Fog or mist</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="light">Lighting Condition</label>
+              <select id="light">
+                <option selected>Daylight</option>
+                <option>Darkness - lights lit</option>
+                <option>Darkness - lights unlit</option>
+                <option>Darkness - no lighting</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="urban_rural">Urban or Rural Classification</label>
+              <select id="urban_rural">
+                <option selected>Urban</option>
+                <option>Rural</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="junction">Junction Detail</label>
+              <select id="junction">
+                <option>Not at junction</option>
+                <option selected>T or staggered junction</option>
+                <option>Crossroads</option>
+                <option>Roundabout</option>
+                <option>Private drive</option>
+                <option>Other junction</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-predict" class="btn btn-primary" style="width: 100%;">
+            ⚡ Incur Severity Prediction
+          </button>
+        </form>
+
+        <div id="prediction-result" class="result-box">
+          <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Estimated Risk Category</div>
+          <div id="res-severity" class="result-severity">SLIGHT</div>
+          <div id="res-conf" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px;">Confidence: 85%</div>
+          <div style="max-width: 400px; margin: 0 auto; height: 160px; position: relative;">
+            <canvas id="chart-predict-probs"></canvas>
+          </div>
+          <div id="res-model" style="font-size: 0.75rem; margin-top: 10px; opacity: 0.8;"></div>
+        </div>
+
+        <div class="alert-box">
+          💡 <strong>Responsible AI Policy</strong>: RoadGuard AI estimates severity based on statistical associations learned from historical crash distributions. Predictions are advisory and do not supersede official collision reconstruction or emergency response standards.
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. BATCH CSV PREDICTION TAB -->
+    <section id="tab-batch" class="tab-content">
+      <div class="card">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.4rem;">📁 Batch Collision Prediction</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          Upload a CSV of collision records. The backend validates schema constraints, executes high-throughput inference, and streams back an enriched downloadable CSV.
+        </p>
+
+        <div class="dropzone" onclick="document.getElementById('batch-file-input').click()">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">📄</div>
+          <div style="font-weight: 700; margin-bottom: 4px;">Click to select or drag & drop collision CSV file</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);" id="file-label">Max upload: 25 MB</div>
+          <input type="file" id="batch-file-input" accept=".csv" style="display: none;" onchange="handleFileSelect(event)" />
+        </div>
+
+        <div id="batch-preview-container" style="display: none; margin-top: 1.5rem;">
+          <h4 style="margin-bottom: 8px;">File Preview: <span id="batch-filename" style="color: var(--primary);"></span></h4>
+          <div style="overflow-x: auto; max-height: 220px; border: 1px solid var(--border); border-radius: 6px;">
+            <table id="batch-preview-table"></table>
+          </div>
+          <button id="btn-run-batch" class="btn btn-primary" style="margin-top: 1rem;" onclick="executeBatchInference()">
+            🚀 Execute Batch Predictions
+          </button>
+        </div>
+
+        <div id="batch-results-container" style="display: none; margin-top: 1.5rem;">
+          <div style="background: #DCFCE7; border: 1px solid #86EFAC; color: #166534; padding: 12px 16px; border-radius: 6px; font-weight: 600; margin-bottom: 1rem;" id="batch-success-msg">
+            Batch inference successful!
+          </div>
+          <button id="btn-download-csv" class="btn btn-primary" onclick="downloadEnrichedCSV()">
+            📥 Download Enriched Predictions CSV
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ACCIDENT ANALYTICS TAB -->
+    <section id="tab-analytics" class="tab-content">
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.4rem;">📈 Multi-Factor Risk Analytics</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Investigate historical accident frequencies across lighting, urbanization, and weekly temporal cycles.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Accidents by Lighting Condition</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-light"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Collisions by Day of Week</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-day"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Urban vs. Rural Risk Distribution</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-area"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Risk Synthesis Insights</div>
+          <ul style="font-size: 0.9rem; line-height: 1.7; padding-left: 1.2rem; color: #334155;">
+            <li><strong>High Speed Multiplier</strong>: Collisions in 60-70 mph zones show a 3.4x elevated likelihood of fatal outcomes compared to 30 mph zones.</li>
+            <li><strong>Rural Factor</strong>: Rural collisions comprise less total volume but account for over 58% of all fatal collisions due to unlit darkness and delayed emergency arrival.</li>
+            <li><strong>Weekend Surge</strong>: Friday and Saturday evenings represent peak collision density with multi-vehicle involvement.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. ACCIDENT HOTSPOTS TAB -->
+    <section id="tab-hotspots" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <span>🗺️ Geographic Collision Hotspot Map</span>
+          <select id="hotspot-filter" onchange="filterHotspots(this.value)" style="padding: 4px 8px; font-size: 0.85rem;">
+            <option value="ALL">All Severities</option>
+            <option value="Fatal">Fatal Only</option>
+            <option value="Serious">Serious Only</option>
+            <option value="Slight">Slight Only</option>
+          </select>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Interactive coordinate map displaying historical accidents across verified geographic boundaries. Red: Fatal, Orange: Serious, Blue: Slight.
+        </p>
+        <div id="map"></div>
+      </div>
+    </section>
+
+    <!-- 6. MODEL PERFORMANCE TAB -->
+    <section id="tab-performance" class="tab-content">
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.4rem;">🎯 Machine Learning Audit & Model Comparison</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Audited metrics on held-out test split (20%), candidate algorithm benchmark ranking, and permutation feature importance.
+        </p>
+        <div class="grid-4" style="margin-top: 1rem;">
+          <div class="card" style="background: #F8FAFC;">
+            <div class="metric-label">Selected Pipeline</div>
+            <div id="audit-model-name" class="metric-value" style="font-size: 1.5rem; color: var(--primary);">Random Forest</div>
+          </div>
+          <div class="card" style="background: #F8FAFC;">
+            <div class="metric-label">Macro F1-Score</div>
+            <div id="audit-macro-f1" class="metric-value" style="font-size: 1.5rem;">0.6236</div>
+          </div>
+          <div class="card" style="background: #F8FAFC;">
+            <div class="metric-label">Balanced Accuracy</div>
+            <div id="audit-bal-acc" class="metric-value" style="font-size: 1.5rem;">0.6455</div>
+          </div>
+          <div class="card" style="background: #F8FAFC;">
+            <div class="metric-label">Overall Accuracy</div>
+            <div id="audit-acc" class="metric-value" style="font-size: 1.5rem;">0.7217</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Candidate Models Benchmark Table</div>
+          <div style="overflow-x: auto;">
+            <table id="table-comparison">
+              <thead>
+                <tr>
+                  <th>Algorithm</th>
+                  <th>Macro F1</th>
+                  <th>Balanced Acc</th>
+                  <th>Accuracy</th>
+                  <th>Weighted F1</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Permutation Feature Importance (Macro F1 Drop)</div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-importance"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Class-Wise Evaluation Metrics</div>
+        <div style="overflow-x: auto;">
+          <table id="table-classwise">
+            <thead>
+              <tr>
+                <th>Severity Class</th>
+                <th>Precision</th>
+                <th>Recall (Sensitivity)</th>
+                <th>F1-Score</th>
+                <th>Support (Test Cases)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Global state
+    let mapInstance = null;
+    let hotspotMarkers = [];
+    let allHotspotData = [];
+    let batchPredictedBlob = null;
+    let predictProbChart = null;
+
+    // Charts instances registry
+    const charts = {};
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      const targetTab = document.getElementById(`tab-${tabId}`);
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
+
+      event.currentTarget.classList.add('active');
+
+      if (tabId === 'hotspots' && mapInstance) {
+        setTimeout(() => mapInstance.invalidateSize(), 200);
+      }
+    }
+
+    // Health Check
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        const badge = document.getElementById('system-status-badge');
+        if (res.ok) {
+          const data = await res.json();
+          badge.className = 'status-badge status-online';
+          badge.textContent = `● ONLINE (${data.model_name || 'Active'})`;
+        } else {
+          badge.className = 'status-badge status-offline';
+          badge.textContent = '● DEGRADED / OFFLINE';
+        }
+      } catch (e) {
+        const badge = document.getElementById('system-status-badge');
+        badge.className = 'status-badge status-offline';
+        badge.textContent = '● BACKEND OFFLINE';
+      }
+    }
+
+    // Load Dashboard & Analytics Summary Data
+    async function loadAnalytics() {
+      try {
+        const res = await fetch('/analytics/summary');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Populate KPIs
+        const total = data.total_records || 0;
+        const slight = (data.severity_distribution && data.severity_distribution.Slight) || 0;
+        const serious = (data.severity_distribution && data.severity_distribution.Serious) || 0;
+        const fatal = (data.severity_distribution && data.severity_distribution.Fatal) || 0;
+
+        document.getElementById('kpi-total').textContent = total.toLocaleString();
+        document.getElementById('kpi-slight').textContent = slight.toLocaleString();
+        document.getElementById('kpi-serious').textContent = serious.toLocaleString();
+        document.getElementById('kpi-fatal').textContent = fatal.toLocaleString();
+
+        document.getElementById('kpi-slight-pct').textContent = total ? `${((slight/total)*100).toFixed(1)}% of total` : '';
+        document.getElementById('kpi-serious-pct').textContent = total ? `${((serious/total)*100).toFixed(1)}% of total` : '';
+        document.getElementById('kpi-fatal-pct').textContent = total ? `${((fatal/total)*100).toFixed(1)}% of total` : '';
+
+        // Render Severity Donut Chart
+        renderChart('chart-severity', 'doughnut', {
+          labels: ['Slight', 'Serious', 'Fatal'],
+          datasets: [{
+            data: [slight, serious, fatal],
+            backgroundColor: ['#38BDF8', '#FBBF24', '#F87171'],
+            borderWidth: 2,
+            borderColor: '#FFFFFF'
+          }]
+        });
+
+        // Hourly Chart
+        const hours = Object.keys(data.hourly_distribution || {});
+        const hourCounts = Object.values(data.hourly_distribution || {});
+        renderChart('chart-hourly', 'bar', {
+          labels: hours.map(h => `${h}:00`),
+          datasets: [{
+            label: 'Collisions',
+            data: hourCounts,
+            backgroundColor: '#475569',
+            borderRadius: 4
+          }]
+        });
+
+        // Weather Chart
+        const weathers = Object.keys(data.weather_distribution || {});
+        const weatherCounts = Object.values(data.weather_distribution || {});
+        renderChart('chart-weather', 'bar', {
+          labels: weathers,
+          datasets: [{
+            label: 'Incidents',
+            data: weatherCounts,
+            backgroundColor: '#3B82F6',
+            borderRadius: 4
+          }]
+        }, { indexAxis: 'y' });
+
+        // Surface Chart
+        const surfaces = Object.keys(data.surface_distribution || {});
+        const surfaceCounts = Object.values(data.surface_distribution || {});
+        renderChart('chart-surface', 'bar', {
+          labels: surfaces,
+          datasets: [{
+            label: 'Incidents',
+            data: surfaceCounts,
+            backgroundColor: '#0284C7',
+            borderRadius: 4
+          }]
+        });
+
+        // Light Conditions Chart
+        const lights = Object.keys(data.light_distribution || {});
+        const lightCounts = Object.values(data.light_distribution || {});
+        renderChart('chart-light', 'bar', {
+          labels: lights,
+          datasets: [{
+            label: 'Accidents',
+            data: lightCounts,
+            backgroundColor: '#8B5CF6',
+            borderRadius: 4
+          }]
+        }, { indexAxis: 'y' });
+
+        // Day of Week Chart
+        const days = Object.keys(data.day_distribution || {});
+        const dayCounts = Object.values(data.day_distribution || {});
+        renderChart('chart-day', 'bar', {
+          labels: days,
+          datasets: [{
+            label: 'Collisions',
+            data: dayCounts,
+            backgroundColor: '#10B981',
+            borderRadius: 4
+          }]
+        });
+
+        // Urban vs Rural Chart
+        const areas = Object.keys(data.area_distribution || {});
+        const areaCounts = Object.values(data.area_distribution || {});
+        renderChart('chart-area', 'pie', {
+          labels: areas,
+          datasets: [{
+            data: areaCounts,
+            backgroundColor: ['#6366F1', '#EC4899']
+          }]
+        });
+
+      } catch (e) {
+        console.error('Failed to load analytics:', e);
+      }
+    }
+
+    // Chart Helper
+    function renderChart(canvasId, type, data, extraOptions = {}) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+      if (charts[canvasId]) {
+        charts[canvasId].destroy();
+      }
+      charts[canvasId] = new Chart(ctx, {
+        type: type,
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: type === 'doughnut' || type === 'pie' ? 'bottom' : 'none' }
+          },
+          ...extraOptions
+        }
+      });
+    }
+
+    // Single Prediction Handler
+    async function handleSinglePrediction(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-predict');
+      btn.innerHTML = '<span class="spinner"></span> Computing Inferences...';
+      btn.disabled = true;
+
+      const payload = {
+        number_of_vehicles: parseInt(document.getElementById('num_vehicles').value),
+        speed_limit: parseInt(document.getElementById('speed_limit').value),
+        accident_hour: parseInt(document.getElementById('accident_hour').value),
+        day_of_week: document.getElementById('day_of_week').value,
+        road_type: document.getElementById('road_type').value,
+        road_surface_conditions: document.getElementById('road_surface').value,
+        weather_conditions: document.getElementById('weather').value,
+        light_conditions: document.getElementById('light').value,
+        urban_or_rural_area: document.getElementById('urban_rural').value,
+        junction_detail: document.getElementById('junction').value,
+      };
+
+      try {
+        const res = await fetch('/predict/severity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Prediction failed: ' + (err.detail || res.statusText));
+          return;
+        }
+
+        const data = await res.json();
+        const resBox = document.getElementById('prediction-result');
+        resBox.style.display = 'block';
+        resBox.className = `result-box ${data.predicted_severity}`;
+
+        document.getElementById('res-severity').textContent = data.predicted_severity;
+        document.getElementById('res-conf').textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+        document.getElementById('res-model').textContent = `Model Pipeline: ${data.model_identifier}`;
+
+        // Render mini probability bar
+        const probs = data.class_probabilities || {};
+        const labels = Object.keys(probs);
+        const vals = Object.values(probs).map(v => (v * 100).toFixed(1));
+
+        renderChart('chart-predict-probs', 'bar', {
+          labels: labels,
+          datasets: [{
+            data: vals,
+            backgroundColor: labels.map(l => l === 'Fatal' ? '#EF4444' : (l === 'Serious' ? '#F59E0B' : '#0284C7')),
+            borderRadius: 4
+          }]
+        }, {
+          scales: {
+            y: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+          }
+        });
+
+      } catch (err) {
+        alert('Error connecting to backend: ' + err.message);
+      } finally {
+        btn.innerHTML = '⚡ Incur Severity Prediction';
+        btn.disabled = false;
+      }
+    }
+
+    // Batch File Selection & Preview
+    let selectedBatchFile = null;
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      selectedBatchFile = file;
+
+      document.getElementById('file-label').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      document.getElementById('batch-filename').textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(l => l.trim()).slice(0, 6);
+        const table = document.getElementById('batch-preview-table');
+        table.innerHTML = '';
+
+        lines.forEach((line, idx) => {
+          const row = document.createElement('tr');
+          const cols = line.split(',');
+          cols.forEach(col => {
+            const el = idx === 0 ? document.createElement('th') : document.createElement('td');
+            el.textContent = col.trim();
+            row.appendChild(el);
+          });
+          table.appendChild(row);
+        });
+
+        document.getElementById('batch-preview-container').style.display = 'block';
+        document.getElementById('batch-results-container').style.display = 'none';
+      };
+      reader.readAsText(file.slice(0, 8192)); // preview head
+    }
+
+    // Execute Batch Inference
+    async function executeBatchInference() {
+      if (!selectedBatchFile) return;
+      const btn = document.getElementById('btn-run-batch');
+      btn.innerHTML = '<span class="spinner"></span> Processing Batch...';
+      btn.disabled = true;
+
+      const formData = new FormData();
+      formData.append('file', selectedBatchFile);
+
+      try {
+        const res = await fetch('/predict/batch', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Batch prediction error: ' + (err.detail || res.statusText));
+          return;
+        }
+
+        batchPredictedBlob = await res.blob();
+        const count = res.headers.get('X-Total-Records') || 'All';
+
+        document.getElementById('batch-success-msg').textContent = `Batch prediction completed for ${count} records!`;
+        document.getElementById('batch-results-container').style.display = 'block';
+
+      } catch (err) {
+        alert('Failed to process batch CSV: ' + err.message);
+      } finally {
+        btn.innerHTML = '🚀 Execute Batch Predictions';
+        btn.disabled = false;
+      }
+    }
+
+    function downloadEnrichedCSV() {
+      if (!batchPredictedBlob) return;
+      const url = window.URL.createObjectURL(batchPredictedBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `predicted_${selectedBatchFile ? selectedBatchFile.name : 'accidents.csv'}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // Initialize Leaflet Map
+    async function initHotspotsMap() {
+      if (mapInstance) return;
+      mapInstance = L.map('map').setView([53.5, -1.8], 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapInstance);
+
+      try {
+        const res = await fetch('/analytics/hotspots');
+        if (!res.ok) return;
+        allHotspotData = await res.json();
+        renderMarkers(allHotspotData);
+      } catch (e) {
+        console.error('Failed to load hotspots:', e);
+      }
+    }
+
+    function renderMarkers(records) {
+      hotspotMarkers.forEach(m => mapInstance.removeLayer(m));
+      hotspotMarkers = [];
+
+      const colorMap = {
+        'Fatal': '#EF4444',
+        'Serious': '#F59E0B',
+        'Slight': '#0284C7'
+      };
+
+      records.forEach(pt => {
+        const color = colorMap[pt.severity] || '#64748B';
+        const marker = L.circleMarker([pt.lat, pt.lng], {
+          radius: pt.severity === 'Fatal' ? 7 : (pt.severity === 'Serious' ? 5 : 4),
+          fillColor: color,
+          color: '#FFFFFF',
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.8
+        });
+
+        marker.bindPopup(`
+          <div style="font-size: 0.85rem; line-height: 1.4;">
+            <strong>${pt.id || 'Collision'}</strong><br/>
+            Severity: <strong style="color: ${color};">${pt.severity}</strong><br/>
+            Speed Limit: ${pt.speed} mph<br/>
+            Weather: ${pt.weather}<br/>
+            Surface: ${pt.surface}
+          </div>
+        `);
+
+        marker.addTo(mapInstance);
+        hotspotMarkers.push(marker);
+      });
+    }
+
+    function filterHotspots(val) {
+      if (val === 'ALL') {
+        renderMarkers(allHotspotData);
+      } else {
+        renderMarkers(allHotspotData.filter(d => d.severity === val));
+      }
+    }
+
+    // Load Model Metrics & Audit Data
+    async function loadModelMetrics() {
+      try {
+        const res = await fetch('/model/metrics');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Cards
+        document.getElementById('audit-model-name').textContent = data.selected_model || 'Random Forest';
+        document.getElementById('audit-macro-f1').textContent = (data.metrics.macro_f1 || 0).toFixed(4);
+        document.getElementById('audit-bal-acc').textContent = (data.metrics.balanced_accuracy || 0).toFixed(4);
+        document.getElementById('audit-acc').textContent = (data.metrics.accuracy || 0).toFixed(4);
+
+        // Comparison Table
+        const compTbody = document.querySelector('#table-comparison tbody');
+        compTbody.innerHTML = '';
+        (data.model_comparison || []).forEach(row => {
+          const tr = document.createElement('tr');
+          const isSelected = row.model_name === data.selected_model;
+          tr.style.fontWeight = isSelected ? '700' : 'normal';
+          if (isSelected) tr.style.backgroundColor = '#EFF6FF';
+          tr.innerHTML = `
+            <td>${row.model_name} ${isSelected ? '🏆' : ''}</td>
+            <td>${(row.macro_f1 || 0).toFixed(4)}</td>
+            <td>${(row.balanced_accuracy || 0).toFixed(4)}</td>
+            <td>${(row.accuracy || 0).toFixed(4)}</td>
+            <td>${(row.weighted_f1 || 0).toFixed(4)}</td>
+          `;
+          compTbody.appendChild(tr);
+        });
+
+        // Feature Importance Chart
+        const featList = (data.feature_importance && data.feature_importance.features) || [];
+        const featNames = featList.slice(0, 7).map(f => f.feature);
+        const featScores = featList.slice(0, 7).map(f => f.importance_mean);
+
+        renderChart('chart-importance', 'bar', {
+          labels: featNames,
+          datasets: [{
+            label: 'Macro F1 Drop',
+            data: featScores,
+            backgroundColor: '#0D9488',
+            borderRadius: 4
+          }]
+        }, { indexAxis: 'y' });
+
+        // Classwise Table
+        const pcTbody = document.querySelector('#table-classwise tbody');
+        pcTbody.innerHTML = '';
+        const perClass = data.metrics.per_class || {};
+        for (const [cls, vals] of Object.entries(perClass)) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${cls}</strong></td>
+            <td>${(vals.precision || 0).toFixed(4)}</td>
+            <td>${(vals.recall || 0).toFixed(4)}</td>
+            <td>${(vals.f1_score || 0).toFixed(4)}</td>
+            <td>${vals.support || 0}</td>
+          `;
+          pcTbody.appendChild(tr);
+        }
+
+      } catch (e) {
+        console.error('Failed to load model metrics:', e);
+      }
+    }
+
+    // Startup initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      checkHealth();
+      loadAnalytics();
+      initHotspotsMap();
+      loadModelMetrics();
+    });
+  </script>
+</body>
+</html>

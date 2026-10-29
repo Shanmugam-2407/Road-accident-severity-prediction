@@ -157,3 +157,4 @@ CATEGORICAL_CHOICES = {
         "Sunday",
     ],
 }
+

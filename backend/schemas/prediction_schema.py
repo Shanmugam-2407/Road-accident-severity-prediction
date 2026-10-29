@@ -120,3 +120,4 @@ class ModelMetricsResponse(BaseModel):
     model_comparison: List[Dict[str, Any]]
     feature_importance: Dict[str, Any]
     metadata: Dict[str, Any]
+

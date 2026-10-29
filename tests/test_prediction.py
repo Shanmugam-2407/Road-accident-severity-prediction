@@ -89,3 +89,4 @@ def test_predict_batch_df(valid_record):
     assert results["predicted_severity"].iloc[0] in TARGET_CLASSES
     if "prediction_confidence" in results.columns:
         assert 0.0 <= results["prediction_confidence"].iloc[0] <= 1.0
+

@@ -99,3 +99,4 @@ def test_model_metrics_endpoint():
     assert "metrics" in data
     assert "model_comparison" in data
     assert "feature_importance" in data
+

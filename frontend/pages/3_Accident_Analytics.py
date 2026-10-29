@@ -166,3 +166,4 @@ with tab3:
             st.plotly_chart(fig_corr, use_container_width=True)
         else:
             st.info("Insufficient numerical variables for correlation matrix.")
+

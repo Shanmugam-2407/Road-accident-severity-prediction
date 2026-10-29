@@ -134,3 +134,4 @@ def compute_feature_importance(
             "error": str(e),
             "interpretation_note": "Feature importance calculation failed or unsupported for this estimator.",
         }
+

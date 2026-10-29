@@ -145,3 +145,4 @@ def test_summarize_dataset_quality(valid_sample_df):
     assert summary["total_columns"] == 13
     assert summary["duplicate_records"] == 0
     assert "Slight" in summary["severity_distribution"]
+

@@ -194,3 +194,4 @@ with tab_audit:
             3. **Imbalance Constraints**: While class-weighting and balanced tuning maximize recall, severe accident categories remain naturally infrequent in empirical road safety datasets.
             """
         )
+

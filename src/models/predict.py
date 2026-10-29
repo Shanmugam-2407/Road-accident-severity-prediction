@@ -165,3 +165,4 @@ def predict_batch(
         results_df["prediction_confidence"] = np.round(np.max(probs, axis=1), 4)
 
     return results_df
+

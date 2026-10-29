@@ -95,3 +95,4 @@ if uploaded_file is not None:
         st.error(f"Failed to read CSV file: {str(e)}")
 else:
     st.info("💡 **Tip**: You can test batch predictions using the sample dataset located at `data/sample/sample_accidents.csv`.")
+

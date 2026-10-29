@@ -27,3 +27,4 @@ python-dotenv>=1.0.0
 # Testing & Exploration
 pytest>=7.4.0
 jupyter>=1.0.0
+
