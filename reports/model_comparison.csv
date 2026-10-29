@@ -1,0 +1,5 @@
+model_name,accuracy,balanced_accuracy,macro_precision,macro_recall,macro_f1,weighted_f1
+Random Forest,0.7217,0.6455,0.6087,0.6455,0.6236,0.7289
+Logistic Regression,0.7017,0.6786,0.5923,0.6786,0.6178,0.7122
+XGBoost Classifier,0.73,0.5827,0.6287,0.5827,0.6002,0.725
+Dummy Baseline,0.5367,0.3674,0.3679,0.3674,0.3676,0.5345

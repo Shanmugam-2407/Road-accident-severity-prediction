@@ -1,0 +1,26 @@
+{
+  "model_name": "Random Forest",
+  "trained_at": "2026-10-29T13:37:47.237536Z",
+  "training_samples": 2400,
+  "test_samples": 600,
+  "target_column": "accident_severity",
+  "classes": [
+    "Fatal",
+    "Serious",
+    "Slight"
+  ],
+  "features": [
+    "number_of_vehicles",
+    "speed_limit",
+    "accident_hour",
+    "road_type",
+    "road_surface_conditions",
+    "weather_conditions",
+    "light_conditions",
+    "urban_or_rural_area",
+    "junction_detail",
+    "day_of_week"
+  ],
+  "selection_criterion": "Highest Macro-F1 on held-out test set to prioritize equitable class recall across imbalanced severity tiers.",
+  "algorithm_family": "RandomForestClassifier"
+}

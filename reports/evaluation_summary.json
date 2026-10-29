@@ -1,0 +1,191 @@
+{
+  "selected_model": "Random Forest",
+  "selection_criterion": "Highest Macro-F1 on held-out test set to prioritize equitable class recall across imbalanced severity tiers.",
+  "metrics": {
+    "accuracy": 0.7217,
+    "balanced_accuracy": 0.6455,
+    "macro_precision": 0.6087,
+    "weighted_precision": 0.7393,
+    "macro_recall": 0.6455,
+    "weighted_recall": 0.7217,
+    "macro_f1": 0.6236,
+    "weighted_f1": 0.7289,
+    "labels": [
+      "Fatal",
+      "Serious",
+      "Slight"
+    ],
+    "confusion_matrix": [
+      [
+        24,
+        18,
+        1
+      ],
+      [
+        30,
+        99,
+        45
+      ],
+      [
+        2,
+        71,
+        310
+      ]
+    ],
+    "per_class": {
+      "Fatal": {
+        "precision": 0.4286,
+        "recall": 0.5581,
+        "f1_score": 0.4848,
+        "support": 43
+      },
+      "Serious": {
+        "precision": 0.5266,
+        "recall": 0.569,
+        "f1_score": 0.547,
+        "support": 174
+      },
+      "Slight": {
+        "precision": 0.8708,
+        "recall": 0.8094,
+        "f1_score": 0.839,
+        "support": 383
+      }
+    }
+  },
+  "all_models_comparison": [
+    {
+      "model_name": "Dummy Baseline",
+      "accuracy": 0.5367,
+      "balanced_accuracy": 0.3674,
+      "macro_precision": 0.3679,
+      "macro_recall": 0.3674,
+      "macro_f1": 0.3676,
+      "weighted_f1": 0.5345
+    },
+    {
+      "model_name": "Logistic Regression",
+      "accuracy": 0.7017,
+      "balanced_accuracy": 0.6786,
+      "macro_precision": 0.5923,
+      "macro_recall": 0.6786,
+      "macro_f1": 0.6178,
+      "weighted_f1": 0.7122
+    },
+    {
+      "model_name": "Random Forest",
+      "accuracy": 0.7217,
+      "balanced_accuracy": 0.6455,
+      "macro_precision": 0.6087,
+      "macro_recall": 0.6455,
+      "macro_f1": 0.6236,
+      "weighted_f1": 0.7289
+    },
+    {
+      "model_name": "XGBoost Classifier",
+      "accuracy": 0.73,
+      "balanced_accuracy": 0.5827,
+      "macro_precision": 0.6287,
+      "macro_recall": 0.5827,
+      "macro_f1": 0.6002,
+      "weighted_f1": 0.725
+    }
+  ],
+  "feature_importance": {
+    "method": "Permutation Importance (held-out test set, metric=macro-f1)",
+    "features": [
+      {
+        "feature": "speed_limit",
+        "importance_mean": 0.20617,
+        "importance_std": 0.02069
+      },
+      {
+        "feature": "urban_or_rural_area",
+        "importance_mean": 0.06668,
+        "importance_std": 0.01881
+      },
+      {
+        "feature": "light_conditions",
+        "importance_mean": 0.04749,
+        "importance_std": 0.00825
+      },
+      {
+        "feature": "weather_conditions",
+        "importance_mean": 0.02188,
+        "importance_std": 0.01193
+      },
+      {
+        "feature": "number_of_vehicles",
+        "importance_mean": 0.01384,
+        "importance_std": 0.01502
+      },
+      {
+        "feature": "junction_detail",
+        "importance_mean": 0.01305,
+        "importance_std": 0.01016
+      },
+      {
+        "feature": "road_type",
+        "importance_mean": 0.01248,
+        "importance_std": 0.00594
+      },
+      {
+        "feature": "day_of_week",
+        "importance_mean": 0.01228,
+        "importance_std": 0.01082
+      },
+      {
+        "feature": "road_surface_conditions",
+        "importance_mean": 0.01188,
+        "importance_std": 0.00776
+      },
+      {
+        "feature": "accident_hour",
+        "importance_mean": 0.00158,
+        "importance_std": 0.01093
+      }
+    ],
+    "interpretation_note": "Feature importance reflects statistical association with accident severity categories within the historical dataset. It does not establish direct causation or driver fault."
+  },
+  "dataset_profile": {
+    "total_records": 3000,
+    "total_columns": 16,
+    "total_missing_cells": 0,
+    "missing_percentage": 0.0,
+    "duplicate_records": 0,
+    "severity_distribution": {
+      "Slight": 1917,
+      "Serious": 871,
+      "Fatal": 212
+    },
+    "has_geographic_coordinates": true,
+    "valid_coordinates_count": 3000,
+    "column_missing_counts": {}
+  },
+  "metadata": {
+    "model_name": "Random Forest",
+    "trained_at": "2026-10-29T13:37:47.237536Z",
+    "training_samples": 2400,
+    "test_samples": 600,
+    "target_column": "accident_severity",
+    "classes": [
+      "Fatal",
+      "Serious",
+      "Slight"
+    ],
+    "features": [
+      "number_of_vehicles",
+      "speed_limit",
+      "accident_hour",
+      "road_type",
+      "road_surface_conditions",
+      "weather_conditions",
+      "light_conditions",
+      "urban_or_rural_area",
+      "junction_detail",
+      "day_of_week"
+    ],
+    "selection_criterion": "Highest Macro-F1 on held-out test set to prioritize equitable class recall across imbalanced severity tiers.",
+    "algorithm_family": "RandomForestClassifier"
+  }
+}
