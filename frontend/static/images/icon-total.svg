@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
+  <!-- Car icon for total collisions -->
+  <path d="M10 24 L14 14 C15 11 17 10 20 10 L28 10 C31 10 33 11 34 14 L38 24 L42 26 C43 27 44 28 44 30 L44 37 C44 38 43 39 42 39 L40 39 C39 39 38 38 38 37 L38 35 L10 35 L10 37 C10 38 9 39 8 39 L6 39 C5 39 4 38 4 37 L4 30 C4 28 5 27 6 26 Z" fill="#2563EB" />
+  <circle cx="13" cy="30" r="3.5" fill="#FFFFFF" />
+  <circle cx="35" cy="30" r="3.5" fill="#FFFFFF" />
+  <!-- Windshield -->
+  <path d="M16 15 L32 15 L35 23 L13 23 Z" fill="#93C5FD" opacity="0.9" />
+</svg>

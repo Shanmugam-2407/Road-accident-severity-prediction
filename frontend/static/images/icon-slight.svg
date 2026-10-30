@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
+  <!-- Bandage / Minor trauma icon -->
+  <rect x="8" y="18" width="32" height="12" rx="6" transform="rotate(-30 24 24)" fill="#0284C7" />
+  <rect x="18" y="16" width="12" height="16" rx="2" transform="rotate(-30 24 24)" fill="#BAE6FD" />
+  <!-- Small perforation dots -->
+  <circle cx="21" cy="22" r="1" fill="#0284C7" />
+  <circle cx="27" cy="26" r="1" fill="#0284C7" />
+</svg>

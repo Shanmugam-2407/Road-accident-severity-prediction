@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse, HTMLResponse
+from fastapi.responses import Response, JSONResponse, HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.schemas.prediction_schema import (
     AccidentPredictionRequest,
@@ -42,6 +43,19 @@ app.add_middleware(
 
 
 INDEX_HTML_PATH = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend" / "static"
+
+if STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def get_favicon():
+    """Serve application favicon."""
+    fav_path = STATIC_DIR / "images" / "favicon.svg"
+    if fav_path.is_file():
+        return FileResponse(path=str(fav_path), media_type="image/svg+xml")
+    return Response(status_code=204)
 
 
 @app.get("/", summary="Root Endpoint & Web Interface")

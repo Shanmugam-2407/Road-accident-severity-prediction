@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ROADGUARD AI — Intelligent Road Accident Severity Prediction & Risk Analytics</title>
   
+  <!-- Favicon & Brand Icons -->
+  <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg" />
+  <link rel="alternate icon" href="/favicon.ico" />
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1192,7 +1196,10 @@
   <!-- SIDEBAR NAVIGATION -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-logo-container">🛡️</div>
+      <div class="brand-logo-container">
+        <img src="/static/images/shield-logo.svg" alt="ROADGUARD AI" style="width: 28px; height: 28px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+        <span style="display: none; font-size: 1.4rem;">🛡️</span>
+      </div>
       <div class="brand-details">
         <div class="brand-name">
           ROADGUARD <span class="brand-badge">PRO</span>
@@ -1273,7 +1280,10 @@
 
         <!-- User Role Profile -->
         <div class="user-pill">
-          <div class="user-avatar">RS</div>
+          <div class="user-avatar" style="overflow: hidden; padding: 0;">
+            <img src="/static/images/avatar.svg" alt="Safety Analyst" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none; font-size: 0.75rem; font-weight: 700;">RS</span>
+          </div>
           <div class="user-role">Safety Analyst</div>
         </div>
       </div>
@@ -1364,7 +1374,10 @@
           <div class="kpi-card total">
             <div class="kpi-top">
               <div class="kpi-title">Total Collisions</div>
-              <div class="kpi-icon-pill">🚗</div>
+              <div class="kpi-icon-pill">
+                <img src="/static/images/icon-total.svg" alt="Collisions" style="width: 22px; height: 22px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <span style="display: none;">🚗</span>
+              </div>
             </div>
             <div class="kpi-number" id="kpi-total">3,000</div>
             <div class="kpi-footer">
@@ -1376,7 +1389,10 @@
           <div class="kpi-card slight">
             <div class="kpi-top">
               <div class="kpi-title">Slight Severity</div>
-              <div class="kpi-icon-pill">🩹</div>
+              <div class="kpi-icon-pill">
+                <img src="/static/images/icon-slight.svg" alt="Slight" style="width: 22px; height: 22px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <span style="display: none;">🩹</span>
+              </div>
             </div>
             <div class="kpi-number" id="kpi-slight" style="color: var(--slight);">1,917</div>
             <div class="kpi-footer">
@@ -1388,7 +1404,10 @@
           <div class="kpi-card serious">
             <div class="kpi-top">
               <div class="kpi-title">Serious Severity</div>
-              <div class="kpi-icon-pill">⚠️</div>
+              <div class="kpi-icon-pill">
+                <img src="/static/images/icon-serious.svg" alt="Serious" style="width: 22px; height: 22px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <span style="display: none;">⚠️</span>
+              </div>
             </div>
             <div class="kpi-number" id="kpi-serious" style="color: var(--serious);">871</div>
             <div class="kpi-footer">
@@ -1400,7 +1419,10 @@
           <div class="kpi-card fatal">
             <div class="kpi-top">
               <div class="kpi-title">Fatal Incidents</div>
-              <div class="kpi-icon-pill">🚨</div>
+              <div class="kpi-icon-pill">
+                <img src="/static/images/icon-fatal.svg" alt="Fatal" style="width: 22px; height: 22px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <span style="display: none;">🚨</span>
+              </div>
             </div>
             <div class="kpi-number" id="kpi-fatal" style="color: var(--fatal);">212</div>
             <div class="kpi-footer">
@@ -1692,7 +1714,8 @@
             <div class="prediction-output-card">
               <!-- Empty State -->
               <div id="pred-empty-state" class="result-empty-state">
-                <div style="font-size: 3rem;">🔮</div>
+                <img src="/static/images/empty-prediction.svg" alt="Awaiting Parameters" style="width: 88px; height: 88px; margin-bottom: 8px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <div style="display: none; font-size: 3rem;">🔮</div>
                 <h3 style="color: var(--text-primary); font-size: 1.15rem;">Awaiting Collision Parameters</h3>
                 <p style="font-size: 0.85rem; line-height: 1.5;">
                   Configure the roadway and environmental attributes or select a preset scenario on the left, then click <strong>Run AI Severity Prediction</strong>.
@@ -1784,7 +1807,8 @@
 
         <div class="card" style="margin-bottom: 1.5rem;">
           <div class="dropzone-box" id="csv-dropzone" onclick="document.getElementById('batch-file-input').click()">
-            <div style="font-size: 2.8rem;">📄</div>
+            <img src="/static/images/empty-upload.svg" alt="Upload Collision CSV" style="width: 76px; height: 76px; margin-bottom: 4px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <div style="display: none; font-size: 2.8rem;">📄</div>
             <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">
               Drag & Drop Collision CSV here, or <span style="color: var(--primary);">Browse Files</span>
             </div>
@@ -2901,11 +2925,22 @@
     // =========================================================
     async function initHotspotsMap() {
       if (mapInstance) return;
+
+      if (typeof L !== 'undefined' && L.Icon && L.Icon.Default) {
+        L.Icon.Default.imagePath = 'https://unpkg.com/leaflet@1.9.4/dist/images/';
+      }
+
       mapInstance = L.map('hotspot-map-canvas').setView([53.5, -1.8], 6);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-      }).addTo(mapInstance);
+      });
+      tileLayer.on('tileerror', function(error, tile) {
+        if (tile && error && error.coords) {
+          tile.src = 'https://tile.openstreetmap.org/' + error.coords.z + '/' + error.coords.x + '/' + error.coords.y + '.png';
+        }
+      });
+      tileLayer.addTo(mapInstance);
 
       try {
         const res = await fetch('/analytics/hotspots?limit=2500');
