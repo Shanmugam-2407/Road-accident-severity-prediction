@@ -3,7 +3,7 @@
 import io
 import logging
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse, HTMLResponse
@@ -74,15 +74,35 @@ def get_ui():
 
 
 @app.get("/analytics/summary", summary="Get Historical Analytics Summary")
-def get_analytics_summary() -> Dict[str, Any]:
-    """Retrieve aggregate historical distributions for the dashboard and analytics charts."""
-    return prediction_service.get_dataset_analytics()
+def get_analytics_summary(
+    severity: Optional[str] = None,
+    weather: Optional[str] = None,
+    surface: Optional[str] = None,
+    area: Optional[str] = None,
+    speed: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Retrieve aggregate historical distributions for the dashboard and analytics charts with optional filtering."""
+    return prediction_service.get_dataset_analytics(
+        severity=severity,
+        weather=weather,
+        surface=surface,
+        area=area,
+        speed=speed,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 @app.get("/analytics/hotspots", summary="Get Geographic Accident Hotspots")
-def get_analytics_hotspots(limit: int = 2500) -> List[Dict[str, Any]]:
-    """Retrieve validated coordinate clusters for the interactive map."""
-    return prediction_service.get_hotspot_data(limit=limit)
+def get_analytics_hotspots(
+    severity: Optional[str] = None,
+    speed: Optional[int] = None,
+    limit: int = 2500,
+) -> List[Dict[str, Any]]:
+    """Retrieve validated coordinate clusters for the interactive map with optional filters."""
+    return prediction_service.get_hotspot_data(severity=severity, speed=speed, limit=limit)
 
 
 @app.get("/health", response_model=HealthResponse, summary="Health & Model Readiness Check")
