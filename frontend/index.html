@@ -18,6 +18,11 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet MarkerCluster & Heatmap plugins -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
   <style>
     /* -------------------------------------------------------------
@@ -1116,12 +1121,349 @@
       color: var(--text-primary);
     }
 
-    /* Hotspot Map */
-    #hotspot-map-canvas {
-      height: 540px;
+    /* Hotspot Map & Geospatial Intelligence */
+    .hotspot-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .hotspot-kpi-badge {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hotspot-kpi-badge::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+    }
+
+    .hotspot-kpi-badge.total::before { background: var(--primary); }
+    .hotspot-kpi-badge.fatal::before { background: var(--accent-rose); }
+    .hotspot-kpi-badge.serious::before { background: var(--accent-amber); }
+    .hotspot-kpi-badge.slight::before { background: var(--accent-cyan); }
+
+    .hotspot-kpi-val {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
+
+    .hotspot-kpi-lbl {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .map-controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 1rem;
+      background: var(--bg-card);
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .map-controls-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .map-toggle-group {
+      display: inline-flex;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 2px;
+    }
+
+    .map-toggle-btn {
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all var(--trans-fast);
+    }
+
+    .map-toggle-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .map-toggle-btn.active {
+      background: var(--bg-card);
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    #hotspot-map-wrapper {
+      position: relative;
+      height: 600px;
+      width: 100%;
       border-radius: var(--radius-lg);
       border: 1px solid var(--border-color);
+      overflow: hidden;
+      background: #E2E8F0;
+      box-shadow: var(--shadow-md);
+    }
+
+    #hotspot-map-wrapper.is-fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      z-index: 99999 !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+
+    #hotspot-map-canvas {
+      height: 100%;
+      width: 100%;
       z-index: 10;
+    }
+
+    #map-loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      transition: opacity 0.3s ease;
+    }
+
+    [data-theme="dark"] #map-loading-overlay {
+      background: rgba(15, 23, 42, 0.88);
+    }
+
+    #map-empty-state {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 500;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem 2rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-xl);
+      text-align: center;
+      display: none;
+      max-width: 380px;
+    }
+
+    #map-legend-box {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      z-index: 500;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 12px 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: auto;
+      max-width: 240px;
+    }
+
+    [data-theme="dark"] #map-legend-box {
+      background: rgba(30, 41, 59, 0.94);
+    }
+
+    .map-legend-title {
+      font-weight: 700;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .map-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .map-legend-item:hover {
+      color: var(--text-primary);
+    }
+
+    .map-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid #FFFFFF;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+
+    .map-heatmap-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(to right, #0284C7, #10B981, #F59E0B, #EF4444, #991B1B);
+      margin-top: 4px;
+    }
+
+    .map-heatmap-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Popup Styling */
+    .leaflet-popup-content-wrapper {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+      border-radius: var(--radius-lg) !important;
+      border: 1px solid var(--border-color) !important;
+      box-shadow: 0 12px 28px -4px rgba(0,0,0,0.18) !important;
+      padding: 0 !important;
+      overflow: hidden;
+    }
+
+    .leaflet-popup-content {
+      margin: 0 !important;
+      line-height: 1.4 !important;
+    }
+
+    .leaflet-popup-tip {
+      background: var(--bg-card) !important;
+    }
+
+    .map-popup-card {
+      font-family: var(--font-main);
+      width: 280px;
+    }
+
+    .map-popup-header {
+      padding: 10px 14px;
+      background: var(--bg-card-subtle);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .map-popup-id {
+      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+    }
+
+    .map-popup-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.78rem;
+    }
+
+    .map-popup-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-secondary);
+    }
+
+    .map-popup-row strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .map-popup-footer {
+      padding: 8px 14px;
+      background: var(--primary-subtle);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.72rem;
+      color: var(--primary-hover);
+      line-height: 1.35;
+      font-weight: 500;
+    }
+
+    /* Modern Marker Cluster Overrides */
+    .marker-cluster {
+      background-clip: padding-box;
+      border-radius: 50%;
+    }
+    .marker-cluster div {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+    .marker-cluster-small {
+      background-color: rgba(14, 165, 233, 0.35) !important;
+    }
+    .marker-cluster-small div {
+      background-color: rgba(2, 132, 199, 0.9) !important;
+      color: #FFFFFF !important;
+    }
+    .marker-cluster-medium {
+      background-color: rgba(245, 158, 11, 0.35) !important;
+    }
+    .marker-cluster-medium div {
+      background-color: rgba(217, 119, 6, 0.9) !important;
+      color: #FFFFFF !important;
+    }
+    .marker-cluster-large {
+      background-color: rgba(239, 68, 68, 0.35) !important;
+    }
+    .marker-cluster-large div {
+      background-color: rgba(220, 38, 38, 0.9) !important;
+      color: #FFFFFF !important;
     }
 
     /* Modal System */
@@ -1951,35 +2293,148 @@
         <div class="page-header-row">
           <div>
             <h1 class="page-title">Geospatial Accident Hotspot Intelligence</h1>
-            <p class="page-subtitle">Interactive coordinate cluster map of verified national collision events.</p>
+            <p class="page-subtitle">Real-time coordinate clustering and spatial risk density across national highway corridors.</p>
           </div>
           <div style="display: flex; gap: 8px;">
-            <select id="map-severity-filter" class="filter-select" onchange="filterMapMarkers(this.value)">
-              <option value="ALL">All Severities</option>
-              <option value="Fatal">Fatal Incidents Only</option>
-              <option value="Serious">Serious Only</option>
-              <option value="Slight">Slight Only</option>
-            </select>
+            <button class="btn btn-secondary" onclick="resetMapPosition()">
+              <span>🎯</span> Recenter Map
+            </button>
+            <button class="btn btn-secondary" id="btn-map-fullscreen" onclick="toggleMapFullscreen()">
+              <span>⛶</span> Fullscreen
+            </button>
           </div>
         </div>
 
-        <div class="card" style="margin-bottom: 1.5rem;">
-          <div class="card-header-bar" style="margin-bottom: 0.8rem;">
-            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600;">
-              <span>Jump To Region:</span>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="zoomMapTo(51.5074, -0.1278, 11)">London</button>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="zoomMapTo(52.4862, -1.8904, 11)">Birmingham</button>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="zoomMapTo(53.4808, -2.2426, 11)">Manchester</button>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="zoomMapTo(53.8008, -1.5491, 11)">Leeds</button>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="zoomMapTo(55.9533, -3.1883, 11)">Edinburgh</button>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="zoomMapTo(53.5, -1.8, 6)">All UK</button>
+        <!-- Hotspot KPI Badges -->
+        <div class="hotspot-kpi-row">
+          <div class="hotspot-kpi-badge total">
+            <span class="hotspot-kpi-lbl">Total Plotted Accidents</span>
+            <span class="hotspot-kpi-val" id="map-kpi-total">3,000</span>
+          </div>
+          <div class="hotspot-kpi-badge fatal">
+            <span class="hotspot-kpi-lbl">Fatal Incidents (High Risk)</span>
+            <span class="hotspot-kpi-val" id="map-kpi-fatal" style="color: var(--accent-rose);">—</span>
+          </div>
+          <div class="hotspot-kpi-badge serious">
+            <span class="hotspot-kpi-lbl">Serious Hospitalizations</span>
+            <span class="hotspot-kpi-val" id="map-kpi-serious" style="color: var(--accent-amber);">—</span>
+          </div>
+          <div class="hotspot-kpi-badge slight">
+            <span class="hotspot-kpi-lbl">Slight / Minor Collisions</span>
+            <span class="hotspot-kpi-val" id="map-kpi-slight" style="color: var(--accent-cyan);">—</span>
+          </div>
+        </div>
+
+        <!-- Interactive Map Controls Bar -->
+        <div class="map-controls-bar">
+          <div class="map-controls-group">
+            <!-- View Mode Switcher -->
+            <div class="map-toggle-group">
+              <button class="map-toggle-btn active" id="toggle-view-cluster" onclick="setMapVisualizationMode('clustered')">
+                <span>🔵</span> Clustered
+              </button>
+              <button class="map-toggle-btn" id="toggle-view-points" onclick="setMapVisualizationMode('points')">
+                <span>📍</span> Individual
+              </button>
+              <button class="map-toggle-btn" id="toggle-view-heatmap" onclick="setMapVisualizationMode('heatmap')">
+                <span>🔥</span> Heatmap
+              </button>
             </div>
-            <div id="map-status-pill" style="font-size: 0.78rem; font-weight: 700; color: var(--primary);">
-              Displaying 2,500 coordinates
-            </div>
+
+            <!-- Severity Filter -->
+            <select id="map-filter-severity" class="filter-select" onchange="applyMapFilters()">
+              <option value="ALL">All Severities</option>
+              <option value="Fatal">Fatal Only</option>
+              <option value="Serious">Serious Only</option>
+              <option value="Slight">Slight Only</option>
+            </select>
+
+            <!-- Weather Filter -->
+            <select id="map-filter-weather" class="filter-select" onchange="applyMapFilters()">
+              <option value="ALL">All Weather Conditions</option>
+              <option value="Fine">Fine / Clear</option>
+              <option value="Raining">Raining / Wet</option>
+              <option value="Snowing">Snowing</option>
+              <option value="Fog">Fog or Mist</option>
+            </select>
+
+            <!-- Speed Limit Filter -->
+            <select id="map-filter-speed" class="filter-select" onchange="applyMapFilters()">
+              <option value="ALL">All Speed Limits</option>
+              <option value="20">20 mph (School / Residential)</option>
+              <option value="30">30 mph (Urban Arterial)</option>
+              <option value="40">40 mph (Suburban Ring)</option>
+              <option value="50">50 mph (Semi-Rural)</option>
+              <option value="60">60 mph (Rural Single)</option>
+              <option value="70">70 mph (Dual / Motorway)</option>
+            </select>
+
+            <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.78rem;" onclick="resetMapFilters()">
+              <span>↺</span> Reset Filters
+            </button>
           </div>
 
+          <!-- Region Jump Quick Bar -->
+          <div class="map-controls-group">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Regional Focus:</span>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(51.5074, -0.1278, 11)">London</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(52.4862, -1.8904, 11)">Birmingham</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(53.4808, -2.2426, 11)">Manchester</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(53.8008, -1.5491, 11)">Leeds</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(51.4545, -2.5879, 11)">Bristol</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(54.9783, -1.6178, 11)">Newcastle</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(55.9533, -3.1883, 11)">Edinburgh</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="zoomMapTo(54.0, -2.2, 6)">All UK</button>
+          </div>
+        </div>
+
+        <!-- Hotspot Map Container Wrapper -->
+        <div id="hotspot-map-wrapper">
           <div id="hotspot-map-canvas"></div>
+
+          <!-- Loading Indicator Overlay -->
+          <div id="map-loading-overlay">
+            <div class="loading-spinner" style="width: 38px; height: 38px; border-width: 3px;"></div>
+            <div style="font-size: 0.9rem; font-weight: 700;">Loading Spatial Accident Hotspots...</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Fetching validated coordinate dataset from API</div>
+          </div>
+
+          <!-- Empty State Feedback -->
+          <div id="map-empty-state">
+            <div style="font-size: 2rem; margin-bottom: 8px;">🔍</div>
+            <div style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 4px;">No Collisions Match Selected Filters</div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px;">Try adjusting severity, speed limits, or weather conditions to view coordinate occurrences.</p>
+            <button class="btn btn-primary" style="margin: 0 auto; font-size: 0.8rem;" onclick="resetMapFilters()">Reset Map Filters</button>
+          </div>
+
+          <!-- Floating Map Legend -->
+          <div id="map-legend-box">
+            <div class="map-legend-title">
+              <span>Severity Legend</span>
+              <span id="map-status-pill" style="color: var(--primary); font-size: 0.7rem; font-family: var(--font-mono);">3,000 pts</span>
+            </div>
+            <div class="map-legend-item" onclick="quickFilterSeverity('Fatal')">
+              <span class="map-legend-dot" style="background: #EF4444;"></span>
+              <span>Fatal Incident</span>
+            </div>
+            <div class="map-legend-item" onclick="quickFilterSeverity('Serious')">
+              <span class="map-legend-dot" style="background: #F59E0B;"></span>
+              <span>Serious Injury</span>
+            </div>
+            <div class="map-legend-item" onclick="quickFilterSeverity('Slight')">
+              <span class="map-legend-dot" style="background: #0284C7;"></span>
+              <span>Slight Collision</span>
+            </div>
+
+            <div style="margin-top: 6px; border-top: 1px solid var(--border-color); padding-top: 6px;">
+              <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); margin-bottom: 2px;">HEAT DENSITY SCALE</div>
+              <div class="map-heatmap-bar"></div>
+              <div class="map-heatmap-labels">
+                <span>Low Risk</span>
+                <span>Critical Risk</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- High-Risk Hotspot Clusters Table -->
@@ -2241,8 +2696,13 @@
       document.getElementById('breadcrumb-current').textContent = names[tabId] || 'Platform';
 
       // Refresh map view if hotspots selected
-      if (tabId === 'hotspots' && mapInstance) {
-        setTimeout(() => mapInstance.invalidateSize(), 250);
+      if (tabId === 'hotspots') {
+        if (!mapInstance) {
+          setTimeout(() => initHotspotsMap(), 50);
+        } else {
+          setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 60);
+          setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
+        }
       }
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2921,89 +3381,383 @@
     }
 
     // =========================================================
-    // HOTSPOT MAP & CLUSTERS
+    // HOTSPOT MAP & GEOSPATIAL INTELLIGENCE
     // =========================================================
+    let clusterGroup = null;
+    let markersLayer = null;
+    let heatLayer = null;
+    let currentMapMode = 'clustered';
+    let isMapFullscreen = false;
+
     async function initHotspotsMap() {
-      if (mapInstance) return;
+      if (mapInstance) {
+        mapInstance.invalidateSize();
+        return;
+      }
+
+      const container = document.getElementById('hotspot-map-canvas');
+      if (!container) return;
 
       if (typeof L !== 'undefined' && L.Icon && L.Icon.Default) {
         L.Icon.Default.imagePath = 'https://unpkg.com/leaflet@1.9.4/dist/images/';
       }
 
-      mapInstance = L.map('hotspot-map-canvas').setView([53.5, -1.8], 6);
-
-      const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-      });
-      tileLayer.on('tileerror', function(error, tile) {
-        if (tile && error && error.coords) {
-          tile.src = 'https://tile.openstreetmap.org/' + error.coords.z + '/' + error.coords.x + '/' + error.coords.y + '.png';
-        }
-      });
-      tileLayer.addTo(mapInstance);
-
       try {
-        const res = await fetch('/analytics/hotspots?limit=2500');
-        if (!res.ok) return;
-        fullHotspotData = await res.json();
-        renderMapMarkers(fullHotspotData);
-      } catch (e) {
-        console.error('Error fetching map hotspots:', e);
+        mapInstance = L.map('hotspot-map-canvas', {
+          center: [54.0, -2.2],
+          zoom: 6,
+          zoomControl: true,
+          preferCanvas: true
+        });
+
+        // Add CartoDB Voyager base tile layer with OpenStreetMap fallback
+        const voyagerTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        });
+
+        voyagerTiles.on('tileerror', function(err, tile) {
+          if (tile && err && err.coords) {
+            tile.src = `https://tile.openstreetmap.org/${err.coords.z}/${err.coords.x}/${err.coords.y}.png`;
+          }
+        });
+
+        voyagerTiles.addTo(mapInstance);
+
+        // Setup clustering layer if library is available
+        if (typeof L.markerClusterGroup === 'function') {
+          clusterGroup = L.markerClusterGroup({
+            maxClusterRadius: 42,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            disableClusteringAtZoom: 16,
+            chunkedLoading: true
+          });
+        } else {
+          clusterGroup = L.featureGroup();
+        }
+
+        markersLayer = L.featureGroup();
+
+        // Responsive map size handler
+        window.addEventListener('resize', () => {
+          if (mapInstance) mapInstance.invalidateSize();
+        });
+
+        // Trigger immediate size validation once DOM is rendered
+        setTimeout(() => {
+          if (mapInstance) mapInstance.invalidateSize();
+        }, 120);
+
+        // Fetch coordinate dataset
+        await loadHotspotDataset();
+
+      } catch (err) {
+        console.error('Failed to initialize Leaflet Map:', err);
+        showToast('Map initialization error: ' + err.message, 'error');
       }
     }
 
-    function renderMapMarkers(data) {
-      mapMarkers.forEach(m => mapInstance.removeLayer(m));
-      mapMarkers = [];
+    async function loadHotspotDataset() {
+      const overlay = document.getElementById('map-loading-overlay');
+      if (overlay) overlay.style.display = 'flex';
 
+      try {
+        const res = await fetch('/analytics/hotspots?limit=3500');
+        if (!res.ok) {
+          throw new Error(`HTTP Error ${res.status}: Failed to load hotspot coordinates`);
+        }
+
+        const data = await res.json();
+        // Validate coordinates
+        fullHotspotData = (data || []).filter(d => 
+          !isNaN(d.lat) && !isNaN(d.lng) &&
+          d.lat >= -90 && d.lat <= 90 &&
+          d.lng >= -180 && d.lng <= 180
+        );
+
+        // Calculate Summary KPIs
+        const total = fullHotspotData.length;
+        const fatal = fullHotspotData.filter(d => d.severity === 'Fatal').length;
+        const serious = fullHotspotData.filter(d => d.severity === 'Serious').length;
+        const slight = fullHotspotData.filter(d => d.severity === 'Slight').length;
+
+        const kpiTotal = document.getElementById('map-kpi-total');
+        const kpiFatal = document.getElementById('map-kpi-fatal');
+        const kpiSerious = document.getElementById('map-kpi-serious');
+        const kpiSlight = document.getElementById('map-kpi-slight');
+
+        if (kpiTotal) kpiTotal.textContent = total.toLocaleString();
+        if (kpiFatal) kpiFatal.textContent = fatal.toLocaleString();
+        if (kpiSerious) kpiSerious.textContent = serious.toLocaleString();
+        if (kpiSlight) kpiSlight.textContent = slight.toLocaleString();
+
+        renderCurrentMapVisualization();
+
+      } catch (err) {
+        console.error('Hotspot loading failed:', err);
+        showToast('Hotspot data fetch failed: ' + err.message, 'error');
+        const emptyState = document.getElementById('map-empty-state');
+        if (emptyState) {
+          emptyState.style.display = 'block';
+          emptyState.querySelector('p').textContent = 'Unable to reach the hotspot API endpoint. Please verify server connection.';
+        }
+      } finally {
+        if (overlay) overlay.style.display = 'none';
+      }
+    }
+
+    function setMapVisualizationMode(mode) {
+      currentMapMode = mode;
+      document.querySelectorAll('.map-toggle-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`toggle-view-${mode === 'clustered' ? 'cluster' : (mode === 'points' ? 'points' : 'heatmap')}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      renderCurrentMapVisualization();
+      showToast(`Map layer: ${mode.toUpperCase()}`, 'info');
+    }
+
+    function applyMapFilters() {
+      renderCurrentMapVisualization();
+    }
+
+    function resetMapFilters() {
+      const sevEl = document.getElementById('map-filter-severity');
+      const weatherEl = document.getElementById('map-filter-weather');
+      const speedEl = document.getElementById('map-filter-speed');
+
+      if (sevEl) sevEl.value = 'ALL';
+      if (weatherEl) weatherEl.value = 'ALL';
+      if (speedEl) speedEl.value = 'ALL';
+
+      renderCurrentMapVisualization();
+      resetMapPosition();
+      showToast('Hotspot filters reset to default', 'info');
+    }
+
+    function quickFilterSeverity(sev) {
+      const sevEl = document.getElementById('map-filter-severity');
+      if (sevEl) {
+        sevEl.value = sev;
+        applyMapFilters();
+        showToast(`Filtered by ${sev} severity`, 'info');
+      }
+    }
+
+    function getSafetyTip(pt) {
+      if (pt.severity === 'Fatal') {
+        if (pt.speed >= 60) return 'High kinetic impact rural corridor: deploy reflective barrier systems and speed radar.';
+        if ((pt.light || '').toLowerCase().includes('dark')) return 'Extreme darkness factor: upgrade to high-intensity LED street lighting.';
+        return 'Critical multi-vector collision zone: install automated red-light enforcement and junction cushions.';
+      }
+      if (pt.severity === 'Serious') {
+        if ((pt.surface || '').toLowerCase().includes('wet') || (pt.weather || '').toLowerCase().includes('rain')) {
+          return 'Wet surface skid risk: install high-friction polymer aggregate and improved drainage.';
+        }
+        if (pt.speed >= 50) return 'Suburban high-speed transition: reduce speed limit and implement physical road diet.';
+        return 'Vulnerable road user hotspot: widen pedestrian refuge islands and improve signal clearance times.';
+      }
+      return 'Low-speed urban contact zone: maintain standard lane markings and advance warning signage.';
+    }
+
+    function createHotspotMarker(pt) {
       const colorMap = {
         'Fatal': '#EF4444',
         'Serious': '#F59E0B',
         'Slight': '#0284C7'
       };
+      const color = colorMap[pt.severity] || '#64748B';
+      const radius = pt.severity === 'Fatal' ? 8 : (pt.severity === 'Serious' ? 5.5 : 4);
 
-      data.forEach(pt => {
-        const color = colorMap[pt.severity] || '#64748B';
-        const marker = L.circleMarker([pt.lat, pt.lng], {
-          radius: pt.severity === 'Fatal' ? 7 : (pt.severity === 'Serious' ? 5 : 4),
-          fillColor: color,
-          color: '#FFFFFF',
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.82
-        });
-
-        marker.bindPopup(`
-          <div style="font-family: var(--font-main); font-size: 0.85rem; line-height: 1.5;">
-            <div style="font-weight: 800; color: #1E293B;">${pt.id || 'Collision Incident'}</div>
-            <div>Severity: <strong style="color: ${color};">${pt.severity}</strong></div>
-            <div>Speed Limit: <strong>${pt.speed} mph</strong></div>
-            <div>Weather: ${pt.weather}</div>
-            <div>Road Surface: ${pt.surface}</div>
-            <div style="font-size: 0.75rem; color: #64748B; margin-top: 4px;">Vehicles: ${pt.vehicles} &bull; ${pt.date || ''}</div>
-          </div>
-        `);
-
-        marker.addTo(mapInstance);
-        mapMarkers.push(marker);
+      const marker = L.circleMarker([pt.lat, pt.lng], {
+        radius: radius,
+        fillColor: color,
+        color: '#FFFFFF',
+        weight: pt.severity === 'Fatal' ? 2 : 1.2,
+        opacity: 0.95,
+        fillOpacity: pt.severity === 'Fatal' ? 0.9 : 0.82
       });
 
-      document.getElementById('map-status-pill').textContent = `Displaying ${data.length.toLocaleString()} coordinates`;
+      const popupHtml = `
+        <div class="map-popup-card">
+          <div class="map-popup-header">
+            <span class="map-popup-id">${pt.id || 'INC-' + Math.floor(100000 + Math.random()*900000)}</span>
+            <span class="status-pill ${pt.severity}">${pt.severity}</span>
+          </div>
+          <div class="map-popup-body">
+            <div class="map-popup-row">
+              <span>⚡ Speed Limit</span>
+              <strong>${pt.speed} mph</strong>
+            </div>
+            <div class="map-popup-row">
+              <span>🛣️ Road Type</span>
+              <strong>${pt.road_type || 'Single carriageway'}</strong>
+            </div>
+            <div class="map-popup-row">
+              <span>🌧️ Weather</span>
+              <strong>${pt.weather || 'Fine'}</strong>
+            </div>
+            <div class="map-popup-row">
+              <span>🛞 Road Surface</span>
+              <strong>${pt.surface || 'Dry'}</strong>
+            </div>
+            <div class="map-popup-row">
+              <span>💡 Lighting</span>
+              <strong>${pt.light || 'Daylight'}</strong>
+            </div>
+            <div class="map-popup-row">
+              <span>🚗 Impact</span>
+              <strong>${pt.vehicles || 1} Vehicle(s) &bull; ${pt.casualties || 1} Casualty</strong>
+            </div>
+            <div class="map-popup-row">
+              <span>📅 Recorded</span>
+              <strong>${pt.date || 'Historical'} ${pt.time ? 'at ' + pt.time : ''}</strong>
+            </div>
+          </div>
+          <div class="map-popup-footer">
+            ${getSafetyTip(pt)}
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml, { maxWidth: 320, className: 'roadguard-map-popup' });
+      marker.bindTooltip(`<strong>${pt.severity}</strong> &bull; ${pt.speed} mph`, { direction: 'top', offset: [0, -6] });
+      return marker;
     }
 
-    function filterMapMarkers(severity) {
-      if (severity === 'ALL') {
-        renderMapMarkers(fullHotspotData);
-      } else {
-        renderMapMarkers(fullHotspotData.filter(d => d.severity === severity));
+    function renderCurrentMapVisualization() {
+      if (!mapInstance) return;
+
+      const sev = document.getElementById('map-filter-severity') ? document.getElementById('map-filter-severity').value : 'ALL';
+      const weather = document.getElementById('map-filter-weather') ? document.getElementById('map-filter-weather').value : 'ALL';
+      const speed = document.getElementById('map-filter-speed') ? document.getElementById('map-filter-speed').value : 'ALL';
+
+      // Filter dataset
+      let filtered = fullHotspotData;
+      if (sev !== 'ALL') {
+        filtered = filtered.filter(d => (d.severity || '').toLowerCase() === sev.toLowerCase());
       }
-      showToast(`Map filtered: ${severity}`, 'info');
+      if (weather !== 'ALL') {
+        filtered = filtered.filter(d => (d.weather || '').toLowerCase().includes(weather.toLowerCase()));
+      }
+      if (speed !== 'ALL') {
+        const sVal = parseInt(speed);
+        filtered = filtered.filter(d => d.speed === sVal);
+      }
+
+      // Update status pill
+      const statusPill = document.getElementById('map-status-pill');
+      if (statusPill) {
+        statusPill.textContent = `${filtered.length.toLocaleString()} of ${fullHotspotData.length.toLocaleString()} coordinates`;
+      }
+
+      // Handle Empty State
+      const emptyState = document.getElementById('map-empty-state');
+      if (filtered.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        if (clusterGroup && mapInstance.hasLayer(clusterGroup)) mapInstance.removeLayer(clusterGroup);
+        if (markersLayer && mapInstance.hasLayer(markersLayer)) mapInstance.removeLayer(markersLayer);
+        if (heatLayer && mapInstance.hasLayer(heatLayer)) mapInstance.removeLayer(heatLayer);
+        return;
+      } else {
+        if (emptyState) emptyState.style.display = 'none';
+      }
+
+      // Clear all active layers
+      if (clusterGroup && mapInstance.hasLayer(clusterGroup)) {
+        mapInstance.removeLayer(clusterGroup);
+        clusterGroup.clearLayers();
+      }
+      if (markersLayer && mapInstance.hasLayer(markersLayer)) {
+        mapInstance.removeLayer(markersLayer);
+        markersLayer.clearLayers();
+      }
+      if (heatLayer && mapInstance.hasLayer(heatLayer)) {
+        mapInstance.removeLayer(heatLayer);
+        heatLayer = null;
+      }
+
+      // Render according to selected mode
+      if (currentMapMode === 'heatmap') {
+        if (typeof L.heatLayer === 'function') {
+          const heatPoints = filtered.map(d => [
+            d.lat,
+            d.lng,
+            d.severity === 'Fatal' ? 1.0 : (d.severity === 'Serious' ? 0.65 : 0.35)
+          ]);
+
+          heatLayer = L.heatLayer(heatPoints, {
+            radius: 24,
+            blur: 15,
+            maxZoom: 16,
+            minOpacity: 0.25,
+            gradient: {
+              0.2: '#0284C7',
+              0.4: '#10B981',
+              0.6: '#F59E0B',
+              0.8: '#EF4444',
+              1.0: '#991B1B'
+            }
+          });
+          heatLayer.addTo(mapInstance);
+        } else {
+          showToast('Heatmap plugin not available, falling back to clusters', 'warning');
+          currentMapMode = 'clustered';
+          renderCurrentMapVisualization();
+        }
+      } else if (currentMapMode === 'points') {
+        markersLayer.clearLayers();
+        filtered.forEach(pt => {
+          const m = createHotspotMarker(pt);
+          markersLayer.addLayer(m);
+        });
+        markersLayer.addTo(mapInstance);
+      } else {
+        // Clustered mode (default)
+        if (clusterGroup) {
+          clusterGroup.clearLayers();
+          filtered.forEach(pt => {
+            const m = createHotspotMarker(pt);
+            clusterGroup.addLayer(m);
+          });
+          clusterGroup.addTo(mapInstance);
+        }
+      }
     }
 
     function zoomMapTo(lat, lng, zoom) {
-      if (mapInstance) {
-        mapInstance.setView([lat, lng], zoom, { animate: true });
+      if (!mapInstance) {
+        initHotspotsMap().then(() => {
+          if (mapInstance) mapInstance.setView([lat, lng], zoom, { animate: true });
+        });
+        return;
       }
+      mapInstance.setView([lat, lng], zoom, { animate: true });
+    }
+
+    function resetMapPosition() {
+      zoomMapTo(54.0, -2.2, 6);
+    }
+
+    function toggleMapFullscreen() {
+      const wrapper = document.getElementById('hotspot-map-wrapper');
+      if (!wrapper) return;
+
+      isMapFullscreen = !isMapFullscreen;
+      wrapper.classList.toggle('is-fullscreen', isMapFullscreen);
+
+      const btn = document.getElementById('btn-map-fullscreen');
+      if (btn) {
+        btn.innerHTML = isMapFullscreen ? '<span>🗗</span> Exit Fullscreen' : '<span>⛶</span> Fullscreen';
+      }
+
+      setTimeout(() => {
+        if (mapInstance) mapInstance.invalidateSize();
+      }, 150);
+      setTimeout(() => {
+        if (mapInstance) mapInstance.invalidateSize();
+      }, 350);
     }
 
     // =========================================================
@@ -3118,8 +3872,9 @@
       }
 
       loadDashboardData();
-      initHotspotsMap();
       loadModelAuditData();
+      // Pre-fetch coordinate dataset in background so it's instantly available
+      loadHotspotDataset();
       showToast('ROADGUARD AI Platform Ready', 'success');
     });
   </script>

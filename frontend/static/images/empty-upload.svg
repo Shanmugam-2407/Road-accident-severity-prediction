@@ -15,3 +15,4 @@
   <circle cx="60" cy="85" r="20" fill="url(#cloudGrad)"/>
   <path d="M60 75 L52 83 L57 83 L57 95 L63 95 L63 83 L68 83 Z" fill="#FFFFFF"/>
 </svg>
+

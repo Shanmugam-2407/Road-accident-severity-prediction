@@ -273,7 +273,8 @@ class PredictionService:
         self,
         severity: Optional[str] = None,
         speed: Optional[int] = None,
-        limit: int = 2500
+        weather: Optional[str] = None,
+        limit: int = 3000
     ) -> List[Dict[str, Any]]:
         """Retrieve coordinate hotspots for interactive mapping with optional filters."""
         from src.utils.config import DATASET_PATH, TARGET_COLUMN
@@ -298,6 +299,9 @@ class PredictionService:
         if speed is not None and "speed_limit" in geo.columns:
             geo = geo[geo["speed_limit"] == speed]
 
+        if weather and weather != "ALL" and "weather_conditions" in geo.columns:
+            geo = geo[geo["weather_conditions"].astype(str).str.lower().str.contains(weather.lower())]
+
         if len(geo) > limit:
             geo = geo.sample(n=limit, random_state=42)
 
@@ -311,7 +315,12 @@ class PredictionService:
                 "speed": int(row.get("speed_limit", 30)),
                 "weather": str(row.get("weather_conditions", "")),
                 "surface": str(row.get("road_surface_conditions", "")),
+                "road_type": str(row.get("road_type", "Single carriageway")),
+                "light": str(row.get("light_conditions", "Daylight")),
+                "junction": str(row.get("junction_detail", "Not at junction")),
+                "area": str(row.get("urban_or_rural_area", "Urban")),
                 "vehicles": int(row.get("number_of_vehicles", 1)),
+                "casualties": int(row.get("number_of_casualties", 1)),
                 "date": str(row.get("accident_date", "")),
                 "time": str(row.get("accident_time", "")),
             })

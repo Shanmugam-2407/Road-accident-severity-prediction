@@ -113,10 +113,11 @@ def get_analytics_summary(
 def get_analytics_hotspots(
     severity: Optional[str] = None,
     speed: Optional[int] = None,
-    limit: int = 2500,
+    weather: Optional[str] = None,
+    limit: int = 3000,
 ) -> List[Dict[str, Any]]:
     """Retrieve validated coordinate clusters for the interactive map with optional filters."""
-    return prediction_service.get_hotspot_data(severity=severity, speed=speed, limit=limit)
+    return prediction_service.get_hotspot_data(severity=severity, speed=speed, weather=weather, limit=limit)
 
 
 @app.get("/health", response_model=HealthResponse, summary="Health & Model Readiness Check")
